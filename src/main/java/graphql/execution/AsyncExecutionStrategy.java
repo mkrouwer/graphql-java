@@ -48,12 +48,11 @@ public class AsyncExecutionStrategy extends AbstractAsyncExecutionStrategy {
 
             ExecutionPath fieldPath = parameters.path().segment(fieldName);
             ExecutionStrategyParameters newParameters = parameters
-                    .transform(builder -> builder.field(currentField).path(fieldPath));
+                    .transform(builder -> builder.field(currentField).path(fieldPath).parent(parameters));
 
             CompletableFuture<ExecutionResult> future = resolveField(executionContext, newParameters);
             futures.add(future);
         }
-
         CompletableFuture<ExecutionResult> overallResult = new CompletableFuture<>();
         executionStrategyCtx.onDispatched(overallResult);
 

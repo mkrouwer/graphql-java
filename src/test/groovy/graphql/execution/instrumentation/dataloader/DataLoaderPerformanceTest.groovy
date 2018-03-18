@@ -70,7 +70,7 @@ class DataLoaderPerformanceTest extends Specification {
         //
         //  eg 1 for shops-->departments and one for departments --> products
         BatchCompareDataFetchers.departmentsForShopsBatchLoaderCounter.get() == 1
-        BatchCompareDataFetchers.productsForDepartmentsBatchLoaderCounter.get() == 3
+        BatchCompareDataFetchers.productsForDepartmentsBatchLoaderCounter.get() == 1
     }
 
     def "760 when list handling is missing, its less efficient"() {

@@ -326,6 +326,7 @@ public abstract class ExecutionStrategy {
                 .source(fetchedValue)
                 .nonNullFieldValidator(nonNullableFieldValidator)
                 .path(parameters.path())
+                .parent(parameters.getParent())
                 .build();
 
         log.debug("'{}' completing field '{}'...", executionContext.getExecutionId(), fieldTypeInfo.getPath());
@@ -441,7 +442,10 @@ public abstract class ExecutionStrategy {
                     .fields(parameters.fields())
                     .nonNullFieldValidator(nonNullableFieldValidator)
                     .path(indexedPath)
+                    .listSize(sizeOfIterable(iterableValues))
+                    .currentListIndex(index)
                     .field(parameters.field())
+                    .parent(parameters.getParent())
                     .source(item)
                     .build();
 
@@ -466,6 +470,14 @@ public abstract class ExecutionStrategy {
         });
         overallResult.whenComplete(completeListCtx::onCompleted);
         return overallResult;
+    }
+
+    private int sizeOfIterable(Iterable<?> iterable) {
+        //TODO: make it better
+        if (iterable instanceof List) {
+            return ((List) iterable).size();
+        }
+        return 0;
     }
 
     /**
@@ -547,6 +559,9 @@ public abstract class ExecutionStrategy {
                 .fields(subFields)
                 .nonNullFieldValidator(nonNullableFieldValidator)
                 .path(parameters.path())
+                .listSize(parameters.getListSize())
+                .currentListIndex(parameters.getCurrentListIndex())
+                .parent(parameters.getParent())
                 .source(result).build();
 
         // Calling this from the executionContext to ensure we shift back from mutation strategy to the query strategy.
@@ -579,21 +594,21 @@ public abstract class ExecutionStrategy {
                 return null;
             }
         } else if (result instanceof OptionalInt) {
-            OptionalInt optional = (OptionalInt)result;
+            OptionalInt optional = (OptionalInt) result;
             if (optional.isPresent()) {
                 return optional.getAsInt();
             } else {
                 return null;
             }
         } else if (result instanceof OptionalDouble) {
-            OptionalDouble optional = (OptionalDouble)result;
+            OptionalDouble optional = (OptionalDouble) result;
             if (optional.isPresent()) {
                 return optional.getAsDouble();
             } else {
                 return null;
             }
         } else if (result instanceof OptionalLong) {
-            OptionalLong optional = (OptionalLong)result;
+            OptionalLong optional = (OptionalLong) result;
             if (optional.isPresent()) {
                 return optional.getAsLong();
             } else {

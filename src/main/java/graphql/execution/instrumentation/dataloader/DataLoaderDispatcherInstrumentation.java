@@ -4,6 +4,7 @@ import graphql.ExecutionResult;
 import graphql.ExecutionResultImpl;
 import graphql.execution.AsyncExecutionStrategy;
 import graphql.execution.ExecutionStrategy;
+import graphql.execution.ExecutionStrategyParameters;
 import graphql.execution.instrumentation.InstrumentationContext;
 import graphql.execution.instrumentation.InstrumentationState;
 import graphql.execution.instrumentation.SimpleInstrumentation;
@@ -125,8 +126,21 @@ public class DataLoaderDispatcherInstrumentation extends SimpleInstrumentation {
         dataLoaderRegistry.dispatchAll();
     }
 
-    private void dispatchIfNeeded(CallStack callStack) {
-        if (!callStack.isInList()) {
+    private boolean isEndOfListImpl(ExecutionStrategyParameters executionStrategyParameters) {
+        if (executionStrategyParameters == null) {
+            return true;
+        }
+        if (executionStrategyParameters.getListSize() == 0) return true;
+        return executionStrategyParameters.getCurrentListIndex() + 1 == executionStrategyParameters.getListSize();
+    }
+
+    private boolean isEndOfListOnAllLevels(ExecutionStrategyParameters executionStrategyParameters) {
+        return isEndOfListImpl(executionStrategyParameters) &&
+                (executionStrategyParameters.getParent() == null || isEndOfListOnAllLevels(executionStrategyParameters.getParent()));
+    }
+
+    private void dispatchIfNeeded(CallStack callStack, ExecutionStrategyParameters executionStrategyParameters) {
+        if (isEndOfListOnAllLevels(executionStrategyParameters)) {
             dispatch();
         }
     }
@@ -161,7 +175,7 @@ public class DataLoaderDispatcherInstrumentation extends SimpleInstrumentation {
     @Override
     public InstrumentationContext<ExecutionResult> beginExecutionStrategy(InstrumentationExecutionStrategyParameters parameters) {
         CallStack callStack = parameters.getInstrumentationState();
-        return whenDispatched((result) -> dispatchIfNeeded(callStack));
+        return whenDispatched((result) -> dispatchIfNeeded(callStack, parameters.getExecutionStrategyParameters()));
     }
 
     /*
@@ -177,7 +191,7 @@ public class DataLoaderDispatcherInstrumentation extends SimpleInstrumentation {
         callStack.enterList();
         return whenDispatched((result) -> {
             callStack.exitList();
-            dispatchIfNeeded(callStack);
+            dispatchIfNeeded(callStack, parameters.getExecutionStrategyParameters());
         });
     }
 
